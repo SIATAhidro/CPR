@@ -41,4 +41,10 @@ Luego se realiza la instalación, para esto debe tener privilegios de **sudoer**
 sudo python setup.py install
 ```
 
+## Contacto:
+
+Dudas sobre el codigo, y sugerencias:
+
+- Para dudas escribir a: *hidrosiata@gmail.com* o a *mario.cano@siata.gov.co*
+- Reporte de bugs y problemas favor escribirlos en: https://github.com/SIATAhidro/CPR/issues
 
