@@ -19,6 +19,7 @@ class Main:
     
     @property
     def nombre(self):
+	'''Encuentra el nombre de la estacion'''
         return self.read_sqlOld("select NombreEstacion from estaciones where codigo = %s"%self.codigo)[0][0]        
 
     @property
