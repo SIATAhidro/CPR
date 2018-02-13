@@ -3,7 +3,7 @@ import os
 from numpy.distutils.core import setup, Extension
 
 setup(
-    name='hidrocpr',
+    name='hidrocprV1',
     version='0.0.1',
     author='Hidro SIATA',
     author_email='hidrosiata@gmail.com',
