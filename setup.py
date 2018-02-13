@@ -8,7 +8,7 @@ setup(
     author='Hidro SIATA',
     author_email='hidrosiata@gmail.com',
     packages=['cprv1'],
-    package_data={'cpr':['cpr.py','static.py','bookplots.py']},
+    package_data={'cpr':['cprv1.py','static.py','bookplots.py']},
     url='https://github.com/SIATAhidro/CPR.git',
     license='LICENSE.txt',
     description='Consultas-Plots y Reportes',
