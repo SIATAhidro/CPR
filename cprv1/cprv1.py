@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 #  CRP.py
-#  
+#
 #  Copyright 2018 MCANO <mario.cano@siata.gov.co>
 
 import MySQLdb
@@ -15,6 +15,8 @@ import mysql.connector
 from sqlalchemy import create_engine
 import os
 import warnings
+import static st
+import bookplots as bp
 
 warnings.filterwarnings('ignore')
 
@@ -35,7 +37,7 @@ class SqlDb:
         self.dbname = dbname
         self.port   = port
         self.codigo = codigo
-        
+
     def __repr__(self):
         '''string to recreate the object'''
         return "codigo = {}".format(self.codigo)
@@ -44,97 +46,6 @@ class SqlDb:
         '''string to recreate the main information of the object'''
         return 'dbname: {}, user: {}'.format(self.dbname,self.user)
 
-        
-    @staticmethod
-    def read_csv(path,datetime_index = False,*args,**kwargs):
-        '''
-        pandas.read_csv() customized
-        Parameters
-        ----------
-        path           : csv path
-        datetime_index  :
-        *args,**kwargs : arguments to pass
-        Returns
-        ----------
-        pandas DataFrame
-        '''
-        df = pd.read_csv(path,index_col=0,*args,**kwargs)
-        if datetime_index:
-            df.index = df.index.to_datetime()
-        return df
-    
-    @staticmethod
-    def line_intersection(line1, line2):
-        xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
-        ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])
-        def det(a, b):
-            return a[0] * b[1] - a[1] * b[0]
-
-        div = det(xdiff, ydiff)
-        if div == 0:
-           raise Exception('lines do not intersect')
-
-        d = (det(*line1), det(*line2))
-        x = det(d, xdiff) / div
-        y = det(d, ydiff) / div
-        return (x, y)
-
-    
-    @staticmethod
-    def filter_index(index):
-        '''
-        Selects index by good datetime convertion
-        Parameter
-        ---------
-        index : pandas index object
-        Returns
-        ---------
-        (good_date, bad_date) lists
-        '''
-        good_date = []; bad_date = []
-        for i in index:
-            try:
-                pd.to_datetime(i)
-                good_date.append(i)
-            except ValueError:
-                bad_date.append(i)
-                pass
-        return good_date,bad_date
-    
-    @staticmethod
-    def curva_duracion(df,bins=50):
-        '''
-        Estimates duration flow curve
-        '''
-        a,b = np.histogram(df,bins=bins)
-        x = 100-np.cumsum(a/np.sum(np.array(a,dtype=float))*100.)
-        y = (b[1:] + b[:-1] )/2.
-        x[0] = 99.9
-        return x,y
-    
-    @staticmethod
-    def make_colormap(seq):
-        '''
-        Creates colormap from colormap sequence
-        seq : colormap sequence (rgb colors and boundaries)
-        Parameters
-        ----------
-        Example
-        ----------
-        c = mcolors.ColorConverter().to_rgb
-        cm = make_colormap([c('#D9E5E8'),0.20,c('green'),0.4,c('orange'),0.60,c('red'),0.80,c('indigo')])
-        '''
-        seq = [(None,) * 3, 0.0] + list(seq) + [1.0, (None,) * 3]
-        cdict = {'red': [], 'green': [], 'blue': []}
-        for i, item in enumerate(seq):
-            if isinstance(item, float):
-                r1, g1, b1 = seq[i - 1]
-                r2, g2, b2 = seq[i + 1]
-                cdict['red'].append([item, r1, r2])
-                cdict['green'].append([item, g1, g2])
-                cdict['blue'].append([item, b1, b2])
-        return mcolors.LinearSegmentedColormap('CustomMap', cdict)
-   
     @property
     def conn_db(self):
         '''
@@ -142,32 +53,24 @@ class SqlDb:
         '''
         conn_db = MySQLdb.connect(self.host,self.user,self.passwd,self.dbname)
         return conn_db
-    
-    @staticmethod
-    def round_time(time,each=5.0):
-        '''
-        Gets the date near a freq = 'each' minutes dates
-        '''
-        redondeo = int(math.ceil(time.minute / each)) * each
-        return pd.to_datetime((time + datetime.timedelta(minutes = redondeo-time.minute)).strftime(self.str_date_format))
 
     def logger(self,function,status,message):
-        ''' 
+        '''
         Logs methods performance
         Returns
         -------
         string comma separated values'''
         now = datetime.datetime.now().strftime(self.str_date_format)
-        return '%s,%s,%s,%s'%(now,self.user,function,status,message)  
+        return '%s,%s,%s,%s'%(now,self.user,function,status,message)
 
     def read_sql(self,sql,close_db=True,*keys,**kwargs):
         '''        
-        Read SQL query or database table into a DataFrame.    
+        Read SQL query or database table into a DataFrame.
         Parameters
         ----------
         sql : string SQL query or SQLAlchemy Selectable (select or text object)
             to be executed, or database table name.
-            
+
         keys and kwargs = ( sql, con, index_col=None, coerce_float=True,
                             params=None, parse_dates=None,columns=None, chunksize=None)
         Returns
@@ -178,17 +81,17 @@ class SqlDb:
         if close_db == True:
             self.conn_db.close()
         return df
-    
+
     def execute_sql(self,query,close_db=True):
-        '''        
-        Execute SQL query or database table into a DataFrame.    
+        '''
+        Execute SQL query or database table into a DataFrame.
         Parameters
         ----------
         query : string SQL query or SQLAlchemy Selectable (select or text object)
             to be executed, or database table name.
         keys = (sql, con, index_col=None, coerce_float=True, params=None, parse_dates=None,
         columns=None, chunksize=None)
-        
+
         Returns
         -------
         DataFrame'''
@@ -197,7 +100,7 @@ class SqlDb:
         conn_db.commit()
         if close_db == True:
             conn_db.close ()
-        #print (self.logger('execute_mysql','execution faile','worked',query))      
+        #print (self.logger('execute_mysql','execution faile','worked',query))
 
     def insert_data(self,fields,values,*keys,**kwargs):
         '''
@@ -214,7 +117,7 @@ class SqlDb:
         fields = str(fields).strip('[]').replace("'","")
         execution = 'INSERT INTO %s (%s) VALUES (%s)'%(self.table,fields,values)
         self.execute_sql(query,*keys,**kwargs)
-        
+
     def update_data(self,field,value,pk,*keys,**kwargs):
         '''
         Update data into SQL table
@@ -223,7 +126,7 @@ class SqlDb:
         fields   = list of fields names from SQL db
         values   = list of values to be inserted
         pk       = primary key from table
-        
+
         Example
         -------
         update_data(['nivel','prm'],[0.5,0.2],1025)
@@ -233,7 +136,7 @@ class SqlDb:
 
     def read_boundary_date(self,how,date_field_name = 'fecha'):
         '''
-        Gets boundary date from SQL table based on DateField or DatetimeField name 
+        Gets boundary date from SQL table based on DateField or DatetimeField name
         Parameters
         ----------
         how             = method to get boundary, could be max or min
@@ -244,7 +147,7 @@ class SqlDb:
         '''
         format = (how,date_field,self.table,name,codigo)
         return self.read_sql("select %s(%s) from %s where codigo='%s'"%format).loc[0,'%s(fecha)'%how]
-    
+
     def df_to_sql(self,df,chunksize=20000,*keys,**kwargs):
         '''Replaces existing table with dataframe
         Parameters
@@ -260,33 +163,33 @@ class SqlDb:
                   chunksize = chunksize,
                   index     = False,
                   *keys,**kwargs)
-        
+
     def bound_date(self,how,date_field_name='fecha'):
         '''
         Gets firs and last dates from date field name of SQL table
         Parameters
         ----------
-        how                = min or max (ChoiseField), 
-        date_field_name    = field name of SQL table, containing datetime, timestamp or other time formats 
+        how                = min or max (ChoiseField),
+        date_field_name    = field name of SQL table, containing datetime, timestamp or other time formats
         Returns
         ----------
         DateTime object
         '''
         format = (how,date_field_name,self.table,self.codigo)
         return self.read_sql("select %s(%s) from %s where codigo='%s'"%format).loc[0,'%s(%s)'%(how,date_field_name)]
-    
+
+        Returns
     # functions for id_hydro
     @property
     def info(self):
         '''
         Gets full information from single station
-        Returns
         ---------
         pd.Series
         '''
         query = "SELECT * FROM %s WHERE codigo='%s'"%(self.table,self.codigo)
         return self.read_sql(query).T[0]
-    
+
     def update_series(self,series,field):
         '''
         Update table from pandas time Series
@@ -295,30 +198,30 @@ class SqlDb:
         series   = pandas time series with datetime or timestamp index and frequency = '5min'
         field    = field to be update
         Example
+        value = series[fecha]
         ----------
         series = pd.Series(...,index=pd.date_range(...))
         update_series(series,'nivel')
-        this updates the field nivel 
+        this updates the field nivel
         '''
         pk = self.id_df
         for fecha in series.index:
-            value = series[fecha]
             if math.isnan(value):
                 pass
             else:
                 id    = pk[fecha]
                 self.update_data(field,value,id)
-                
-                
-                
-                
+
+
+
+
 
 class Nivel(SqlDb):
     '''Class Nivel
-    Es una subclase de Main, que hereda sus propiedades'''    
+    Es una subclase de Main, que hereda sus propiedades'''
     def __init__(self,codigo=None,local={},remote={}):
         SqlDb.__init__(self,codigo=codigo,**remote)
-        
+
     @property
     def infost(self):
         '''
@@ -329,7 +232,7 @@ class Nivel(SqlDb):
         '''
         query = "SELECT * FROM %s"%(self.table)
         return self.read_sql(query).set_index('codigo')
-        
+
     @property
     def xSensor(self):
         '''Ubicacion del sensor en el eje x'''
@@ -351,15 +254,15 @@ class Nivel(SqlDb):
         '''Niveles de riesgo
         output: tuple, size = 4'''
         #return self.read_sqlOld("SELECT action_level, minor_flooding, moderate_flooding, major_flooding FROM estaciones WHERE codigo = '%s'"%self.codigo,toPandas=False)[0]
-    
+
     @property
     def sensor_type(self):
-        '''Encuentra el tipo de sensor, 
+        '''Encuentra el tipo de sensor,
         ouput:
         1 si el sensor es de tipo radar,
         0 si el sensor es de tipo ultrasonido'''
-        #return int(self.read_sqlOld("select N from estaciones where codigo = %s"%self.codigo)[0][0])  
-    
+        #return int(self.read_sqlOld("select N from estaciones where codigo = %s"%self.codigo)[0][0])
+
     @property
     def get_hbo(self):
         '''pd.DataFrame de historico_bancallena_offset
@@ -395,7 +298,7 @@ class Nivel(SqlDb):
                     pass
         return s
 
-    
+
     def get_level(self,start,end,offset=None,bands=False):
         '''obtiene dataFrame con datos filtrados, el filtro se usa con la
         ventana movil de desviacion estandar de la media
@@ -406,7 +309,7 @@ class Nivel(SqlDb):
             pd.DataFrame con datos filtrados'''
         # comienzo 19 minutos atras para aplicar ventana movil de 20 datos
         s = self.get_level_sensor(pd.to_datetime(start)-datetime.timedelta(minutes=19),end)
-        # dataframe 
+        # dataframe
         df = pd.DataFrame(index = s.index)
         df['sensor'] = s
         # calculo de datos faltantes
@@ -422,7 +325,7 @@ class Nivel(SqlDb):
         s = s.iloc[1:]
         if bands == True:
             df['upper'] = self.offset_list(df['sensor'])-upper
-            df['lower'] = self.offset_list(df['sensor'])-lower 
+            df['lower'] = self.offset_list(df['sensor'])-lower
         df = df.loc[start:end]
         df['filtrado'] = 0.0
         df.loc[df[filtro].index,'filtrado']=1.0
@@ -448,8 +351,8 @@ class Nivel(SqlDb):
         else:
             level = self.offsetOld-level
         return level
-    
-    
+
+
     def create_id_hydro(self):
         '''
         Creates light table with primary keys to make updates faster
@@ -458,20 +361,20 @@ class Nivel(SqlDb):
         df = self.read_sql("select id,fecha,codigo from hydro")
         S = df[['id','fecha','codigo']].set_index(['codigo','fecha'])
         self.df_to_sql(S.reset_index())
-        self.table = 'hydro' 
+        self.table = 'hydro'
 
     @property
     def id_df(self):
         return self.read_sql("select fecha,id from id_hydro where codigo = '%s'"%self.codigo).set_index('fecha')['id']
-        
 
-                    
+
+
     def update_level_all(self,start,end):
         '''
         Updates sensor level in all stations
         Parameters
         ----------
-        start,end    = range to update,datetime or timestamp 
+        start,end    = range to update,datetime or timestamp
         '''
         start_timer = time.time()
         info = Nivel().infost
@@ -490,8 +393,8 @@ class Nivel(SqlDb):
         seconds = end_count-start_timer
         m, s = divmod(seconds, 60)
         print 'Full updating took %s minutes, %s seconds'%(m,s)
-  
-    def get_sections(self,levantamiento,level): 
+
+    def get_sections(self,levantamiento,level):
         hline = ((levantamiento['x'].min()*1.1,level),(levantamiento['x'].max()*1.1,level)) # horizontal line
         lev = pd.DataFrame.copy(levantamiento) #df to modify
         #PROBLEMAS EN LOS BORDES
@@ -502,7 +405,7 @@ class Nivel(SqlDb):
             lev = pd.DataFrame(np.matrix([lev.iloc[0]['x'],level]),columns=['x','y']).append(lev)
 
         if lev.iloc[-1]['y']<level:
-            print '%s en banca derecha'%borderWarning 
+            print '%s en banca derecha'%borderWarning
             lev = lev.append(pd.DataFrame(np.matrix([lev.iloc[-1]['x'],level]),columns=['x','y']))
 
         condition = (lev['y']>=level).values
@@ -528,8 +431,8 @@ class Nivel(SqlDb):
         for i in np.arange(1,100,2)[:intCount/2]:
             dfs.append(df.loc['Point %s'%i:'Point %s'%(i+1)])
         return dfs
-    
-    
+
+
     def convert_levelToRisk(self,value,riskLevels):
         ''' Convierte lamina de agua o profundidad a nivel de riesgo
 
@@ -569,8 +472,8 @@ class Nivel(SqlDb):
             df.columns = df.columns.strftime('%H:%M')
             df.index = map(lambda x,y:'%s - %s'%(x,y),df.index,nivel.infost.loc[df.index,'NombreEstacion'].values)
         return df
-    
-  
+
+
     def lastBat(self,xSensor):
         dfl = self.mysql_query('select * from levantamiento_aforo_nueva')
         dfl.columns = self.mysql_query('describe levantamiento_aforo_nueva')[0].values
@@ -595,34 +498,13 @@ class Nivel(SqlDb):
         lev = lev.append(pd.DataFrame(np.matrix(intersection),index=['xSensor'],columns=['x','y'])).sort_values('x')
         lev['y'] = lev['y']-intersection[1]
         return lev
-    
-    @staticmethod
-    def get_area(x,y):
-        '''Calcula las áreas y los caudales de cada
-        una de las verticales, con el método de mid-section
-        Input:
-        x = Distancia desde la banca izquierda, type = numpy array
-        y = Produndidad
-        Output:
-        area = Área de la subsección
-        Q = Caudal de la subsección
-        '''
-        # cálculo de áreas
-        d = np.absolute(np.diff(x))/2.
-        b = x[:-1]+ d
-        area = np.diff(b)*y[1:-1]
-        area = np.insert(area, 0, d[0]*y[0])
-        area = np.append(area,d[-1]*y[-1])
-        area = np.absolute(area)
-        # cálculo de caudal
-        return area
 
     def get_areas(self,dfs):
         area = 0
         for df in dfs:
             area+=sum(self.get_area(df['x'].values,df['y'].values))
         return area
-    
+
     def basin_set_DemDir(self,ruta_dem,ruta_dir,nodata=-9999.0,dxp=12.7):
         wmf.cu.nodata=nodata
         wmf.cu.dxp=dxp
@@ -655,7 +537,7 @@ class Nivel(SqlDb):
         else:
             print '\nWARNING: something went wrong'
         return query
-    
+
     def basin_maker(self,lon,lat,dxp=12.7,add=0.001,add_out=0.07,dt =300,save=False,**kwargs):
                 if dxp == 60:
                     ruta_dem = '/media/nicolas/Home/nicolas/01_SIATA/raster/dem_amva60.tif'
@@ -769,7 +651,7 @@ class Nivel(SqlDb):
         if r <> 0:
             print 'Warning: Something went wrong'
 
-        
+
 
 class Pluvio(SqlDb):
     def __init__(self,codigo=None,codigos=None):
@@ -778,11 +660,11 @@ class Pluvio(SqlDb):
     def infost(self):
         infost = self.read_sql('select * from estaciones where red= "pluviografica" or red = "meteorologica" or red = "mocoa-pluvio" and estado="a" and calidad = "1";').set_index('Codigo')
         return infost
-    
+
     @property
     def sensorRed(self):
         return self.read_sqlOld("select red from estaciones where codigo= '%s'"%self.codigo,toPandas=False)[0][0]
-    
+
     def read_pluvio(self,start,end):
         start = pd.to_datetime(start)
         end = pd.to_datetime(end)
@@ -793,7 +675,7 @@ class Pluvio(SqlDb):
                 "FROM datos "                                                               + \
                 "WHERE cliente='%s' and calidad='1' and "              %self.codigo         + \
                 "(((fecha>'%s') or (fecha = '%s' and hora>='%s')) and" %format_1            + \
-                "((fecha<'%s') or (fecha = '%s' and hora<= '%s')))"    %format_2                      
+                "((fecha<'%s') or (fecha = '%s' and hora<= '%s')))"    %format_2
 
         pluvio = self.read_sql(query)
         if pluvio.values.size == 0:
@@ -837,8 +719,8 @@ class Pluvio(SqlDb):
                 df.columns = ['Pluvio']
                 df['Pluvio'] = df['Pluvio']/100.0
         return df['Pluvio']
-    
-    
+
+
 
 class Aforos:
     def subsection(self,x,y,v):
@@ -882,7 +764,7 @@ class Aforos:
         self.verticalesmf = range(1,self.dfmf.index.size+1)
         self.verticales = self.dfmf[self.cols]
         self.verticales[self.verticales<0]=0
-        self.verticales.index = self.verticalesmf 
+        self.verticales.index = self.verticalesmf
         self.verticales.index.name = 'vertical'
         self.verticales['caudal04'] = self.subsection(self.verticales['x'].values,\
                               self.verticales['y'].abs().values,
@@ -891,7 +773,7 @@ class Aforos:
                               self.verticales['y'].abs().values,
                               self.verticales['velocidad04'].values)[0]
         return self.verticales
-    
+
     def plot_section(self,lev,wet,filepath=False,show=False,**kwargs):
         '''Grafica la sección transversal del levantamiento topográfico
         y el aforo.
@@ -909,7 +791,7 @@ class Aforos:
         self.ylabel =       kwargs.get('ylabel','Altura [m]')
         self.xlabel =       kwargs.get('xlabel','x [m]')
         self.sepx =         kwargs.get('sepx',0.3)
-        self.sepy =         kwargs.get('sepy',0.3) 
+        self.sepy =         kwargs.get('sepy',0.3)
         self.yticks =       kwargs.get('yticks',1)'''
         #Kwargs
         self.axis =         kwargs.get('axis',None)
@@ -926,7 +808,7 @@ class Aforos:
         self.ylabel =       kwargs.get('ylabel','Altura [m]')
         self.xlabel =       kwargs.get('xlabel','Distancia desde la margen izquierda [m]')
         self.sepx =         kwargs.get('sepx',0.3)
-        self.sepy =         kwargs.get('sepy',0.3) 
+        self.sepy =         kwargs.get('sepy',0.3)
         self.yticks =       kwargs.get('yticks',1)
         self.paso = int(self.paso)
         # Aforo y levantamiento
@@ -1014,21 +896,21 @@ class Aforos:
             self.verticales.to_csv('%s/%s/%s_aforo_%s.csv'%(self.ruta_salida,self.nombre,self.codigo,self.aforo))
             self.dfr.to_csv('%s/%s/%s_resultado_%s.csv'%(self.ruta_salida,self.nombre,self.codigo,self.aforo))
         self.verticales['y'] = self.verticales['y']*-1.
-        
-        
+
+
     def aforo_latex(self,**kwargs):
         '''Genera una sección de latex con todos los resultados de la sección
         este archivo, se utiliza luego con \include{...} en cualquier informe
         SALIDA:
         archivo de latex .tex, contiene descripción del sitio de aforo,
-        foto del sitio de aforo, mapa, información de la estación de nivel más 
+        foto del sitio de aforo, mapa, información de la estación de nivel más
         cercana, instrumento utilizado en el aforo, gráfica del levantamiento,
         resultados de los parámetros hidrálicos, gráfica de caudal y velocidad
         en las verticales elejidas durante el aforo.
         kwargs:
             redrio: False - si es para el informe redrío
             name: nombre que aparecerá en el informe
-            
+
         '''
         self.redrio = kwargs.get('redrio',False)
         #RESULTADOS DEL AFORO
@@ -1065,7 +947,7 @@ class Aforos:
             self.offset = -999
             self.niveluth = -999
         if redrio == False:
-            self.alo.append('\\textbf{%s}'%self.campo[0]) 
+            self.alo.append('\\textbf{%s}'%self.campo[0])
             self.alo.append('& %.3f'%self.caudal)
             self.alo.append('& \\textbf{%s}'%self.campo[1])
             self.alo.append('& %.3f'%self.caudals)
@@ -1103,7 +985,7 @@ class Aforos:
             self.alo.append('\\caption{Dibujo de la sección}')
             self.alo.append('\\label{fig:dibujo%s%s}'%(self.codigo,self.aforo))
             self.alo.append('\\end{figure}')
-            # GRÁFICA DE VERTICALES       
+            # GRÁFICA DE VERTICALES
             self.alo.append('\\begin{figure}[h!]')
             self.alo.append('\\centering')
             self.ruta_plot = '%s/%s/verticales_%d.pdf'%(self.ruta_salida,self.nombre,self.aforo)
@@ -1118,7 +1000,7 @@ class Aforos:
             np.savetxt('%s/%s/resultados_%s_%s.tex'%(self.ruta,self.nombre,self.nombre,self.aforo), self.alo, fmt='%s')
             self.alop.close()
         else:
-            self.alo.append('\\textbf{%s}'%self.campo[0]) 
+            self.alo.append('\\textbf{%s}'%self.campo[0])
             self.alo.append('& %.3f'%self.caudal)
             self.alo.append('& \\textbf{Dispositivo}')
             self.alo.append('& %s'%self.dispositivo)
@@ -1151,7 +1033,7 @@ class Aforos:
             self.alo.append('\\caption{Dibujo de la sección}')
             self.alo.append('\\label{fig:dibujo%s%s}'%(self.codigo,self.aforo))
             self.alo.append('\\end{figure}')
-            # GRÁFICA DE VERTICALES       
+            # GRÁFICA DE VERTICALES
             self.alo.append('\\begin{figure}[h!]')
             self.alo.append('\\centering')
             self.ruta_plot = '%s/%s/verticales_%d.pdf'%(self.ruta_salida,self.nombre,self.aforo)
@@ -1320,7 +1202,7 @@ class Aforos:
                         print 'INSERT INTO in levantamiento_aforo_nueva vertical %s did not work'%self.vertical
                         self.conn_db.close()
                         pass
-                        
+
     def subir_lan(self):
         '''Inserta tabla en levantamiento_aforo_nueva'''
         if self.id_aforo <> -999:
@@ -1355,9 +1237,9 @@ class Aforos:
         #guarda verticales del aforo
         self.x2 = self.verticales['x'].values
         self.y2 = -1*self.verticales['y'].values
-        self.area_i,self.caudal_i = self.subsection(self.x2,self.y2,self.verticales['velocidad04'].abs().values) 
+        self.area_i,self.caudal_i = self.subsection(self.x2,self.y2,self.verticales['velocidad04'].abs().values)
         self.caudals_i= 0.8*self.subsection(self.x2,self.y2,self.verticales['velocidad08'].abs().values)[1]
-        self.verticales['area'] = self.area_i 
+        self.verticales['area'] = self.area_i
         self.verticales['caudal04'] =  self.caudal_i; self.verticales['caudal08'] =  self.caudals_i
         self.p = []
         if self.y2[0]<0.0:
@@ -1365,7 +1247,7 @@ class Aforos:
         if self.y2[-1]<0.0:
             self.p.append(abs(self.x2[-1]))
         for i in range(len(self.x2)-1):
-            self.p.append(float(np.sqrt(abs(self.x2[i]-self.x2[i+1])**2.0+abs(self.y2[i]-self.y2[i+1])**2.0)))            
+            self.p.append(float(np.sqrt(abs(self.x2[i]-self.x2[i+1])**2.0+abs(self.y2[i]-self.y2[i+1])**2.0)))
         #-------------------------RESULTADOS AFORO---------------------------------------
         self.indices = ['id_estacion_asociada','dispositivo','fecha','ancho_superficial',
                  'caudal_medio','caudal_superficial','error_caudal','velocidad_media',\
@@ -1456,7 +1338,7 @@ class Aforos:
                     print execution
                     print ''
         return executions
-    
+
     def update(self,dbase):
         self.get_id_aforo()
         if dbase=='aforo_nueva':
@@ -1471,7 +1353,7 @@ class Aforos:
         filepath: path to store excel file
         showprint: print outcome
         -------
-        kwags : 
+        kwags :
         -------
         Returns
             ------
@@ -1535,7 +1417,7 @@ class Aforos:
         resultados.set_column(0,0,30)
         resultados.set_column(1,1,30)
         resultados.set_column(2,2,20)
-        # columns names      
+        # columns names
         resultados.write(0,0,'Nombre', format1)
         resultados.write(0,1,'Valor', format1)
         resultados.write(0,2,'Unidad', format1)
@@ -1573,12 +1455,12 @@ class Aforos:
         for vertical in self.levantamiento.index.values:
             levantamiento.write(vertical,0,vertical,format1)
             for idcol,colname in zip(range(1,self.levantamiento.columns.size+1),self.levantamiento.columns):
-                levantamiento.write(vertical,idcol,self.levantamiento.loc[vertical,colname],format2) 
+                levantamiento.write(vertical,idcol,self.levantamiento.loc[vertical,colname],format2)
         workbook.close()
         showprint = kwargs.get('showprint',False)
         if showprint:
             print 'Excel file stored in: %s'%(filepath)
-    
+
     def latex_results_table(self,label):
         self.alo = ['','\\ % ----------------------latex_results_table ---------------------------------------']
         #if self.aforo <> 1:
@@ -1604,7 +1486,7 @@ class Aforos:
         self.velm = float(self.dfr.loc['velocidad_media','Resultado'])
         self.perimetro =float(self.dfr.loc['perimetro','Resultado'])
         self.radio = float(self.dfr.loc['radio_hidraulico','Resultado'])
-        self.alo.append('\\textbf{%s}'%self.campo[0]) 
+        self.alo.append('\\textbf{%s}'%self.campo[0])
         self.alo.append('& %.3f'%self.caudal)
         self.alo.append('& \\textbf{Dispositivo}')
         self.alo.append('& %s'%self.dispositivo)
@@ -1630,7 +1512,7 @@ class Aforos:
         self.alo.append('\\ %----------------------LABEL------------------')
         self.alo.append('\\ % -----Tabla '+'\\ref{%s}'%label)
         return self.alo
-    
+
 class Plots:
     def basin_mappable(self,extra_long=0,extra_lat=0):
         Mcols,Mrows=wmf.cu.basin_2map_find(self.cu.structure,self.cu.ncells)
@@ -1656,7 +1538,7 @@ class Plots:
             llcrnrlon=longs.min()-extra_long,
             urcrnrlon=longs.max()+extra_long,
             resolution='c',ax=axis)
-        Xm,Ym=m(X,Y) 
+        Xm,Ym=m(X,Y)
         nperim = wmf.cu.basin_perim_find(self.cu.structure,self.cu.ncells)
         perim = wmf.cu.basin_perim_cut(nperim)
         xp,yp=m(perim[0],perim[1])
@@ -1681,7 +1563,7 @@ class Plots:
                            fontsize=14,color=[0.0078,0.227,0.26],minor=False,position=(0,1.015));
         ax.set_xticklabels(df.columns.get_level_values(level=1),
                            fontsize=14,color=[0.0078,0.227,0.26],minor=True);
-        plt.draw()  
+        plt.draw()
         yax = ax.get_yaxis()
         pad = max(T.label.get_window_extent().width*1.05 for T in yax.majorTicks)
         yax.set_tick_params(pad=pad)
@@ -1692,7 +1574,7 @@ class Plots:
                 'REPORTE DE CALIDAD DE DATOS\n%s - %s'%(fd.columns.get_level_values(level=0)[0].strftime('%Y-%m-%d'),fd.columns.get_level_values(level=0)[-1].strftime('%Y-%m-%d')),
                 fontsize=22)
         #colorbar
-        cbaxes = fig.add_axes([-0.06, 0.92, 0.25, 0.015]) 
+        cbaxes = fig.add_axes([-0.06, 0.92, 0.25, 0.015])
         cbaxes.tick_params(axis='x', colors=[0.0078,0.227,0.26])
         cbar = fig.colorbar(im,cax = cbaxes, orientation="horizontal")
         cbar.ax.tick_params(labelsize=12)
@@ -1719,7 +1601,7 @@ class Plots:
         ax.set_yticklabels(df.index,fontsize=14,ha = 'left');
         ax.set_xticks(np.arange(-.5, df.columns.size, 1), minor=True,);
         ax.set_yticks(np.arange(-.5, df.index.size, 1), minor=True);
-        plt.draw()  
+        plt.draw()
         yax = ax.get_yaxis()
         pad = max(T.label.get_window_extent().width*1.05 for T in yax.majorTicks)
         yax.set_tick_params(pad=pad)
@@ -1756,9 +1638,9 @@ class Plots:
         nombre = 'Niveles.pdf'
         plt.savefig(nombre,bbox_inches='tight')
         os.system('scp %s mcano@siata.gov.co:/var/www/mario/'%nombre)
-    
-    
-    
+
+
+
     def set_cu(self):
         self.cu = wmf.SimuBasin(rute='/media/nicolas/maso/Mario/basins/%s.nc'%self.codigo)
 
@@ -1775,7 +1657,7 @@ class Plots:
             cdict.append(c(i))
         cdict = cdict[1:-1]
         return self.make_colormap(cdict)
-        
+
 
     def riskLegend(self,ax,alpha=0.5,**kwargs):
         levels = []
@@ -1799,7 +1681,7 @@ class Plots:
         ylim = (ylim[0],0.0)
         axu.set_ylim(ylim)
         ax.set_ylabel('Nivel (cm)',fontsize=fontsize)
-        alpha=0.2    
+        alpha=0.2
         ax.fill_between(nivel.index,ax.get_ylim()[0],riesgos[0],alpha=0.1,color=self.colores_siata[0])
         ax.fill_between(nivel.index,riesgos[0],riesgos[1],alpha=alpha,color='green')
         ax.fill_between(nivel.index,riesgos[1],riesgos[2],alpha=alpha,color='orange')
@@ -1808,7 +1690,7 @@ class Plots:
         ax.set_ylim(0,max(riesgos)*1.05)
         self.riskLegend(ax,ncol=4,bbox_to_anchor=(1.0,1.2))
         return (ax,axu)
-    
+
     def Plot_basin(self,vec=None,Min=None,
             Max=None,ruta=None,figsize=(10,7),
             ZeroAsNaN = 'no',extra_lat=0.0,extra_long=0.0,lines_spaces=0.02,
@@ -1847,7 +1729,7 @@ class Plots:
                 resolution='c',
                 epsg = EPSG,ax=axis)
             Xm,Ym=m(X,Y)
-            #Plotea el contorno de la cuenca y la red 
+            #Plotea el contorno de la cuenca y la red
             nperim = wmf.cu.basin_perim_find(self.cu.structure,self.cu.ncells)
             perim = wmf.cu.basin_perim_cut(nperim)
             xp,yp=m(perim[0],perim[1])
@@ -1877,7 +1759,7 @@ class Plots:
             #Si hay coordenadas de algo las plotea
             #Guarda
             return m,cs
-    
+
     def plot_rain(self,vec,extra_long=0.0,extra_lat = 0.0,ax = None,net=True,labels = [True,False,False,True],coordinates=True,cbarTitle=False,**kwargs):
         if ax is None:
             fig = plt.figure()
@@ -1951,10 +1833,10 @@ class Plots:
         df.loc[self.codigo] = [now,start,end]
         ruteLog = '/media/nicolas/Home/Jupyter/MarioLoco/rainReport/log.csv'
         self.read_csv(ruteLog).append(df).to_csv(ruteLog)
-        
+
     def reportLog(self,rute='../rainReport/log.csv'):
         return self.read_csv(rute)
-    
+
 
     def plot_Section(self,levantamiento,level):
         fig = plt.figure(figsize=(14,6))
@@ -1986,8 +1868,8 @@ class Plots:
             if count == 2:
                 df = pd.DataFrame(np.matrix(nlev),columns = ['x','y'])
                 df = df.iloc[points[0]:points[1]+2]
-                
-                
+
+
                 ax.plot(levantamiento['x'].values,levantamiento['y'].values,color='k')
                 df.plot(x='x',y='y',kind='scatter',ax=ax)
                 plt.fill_between(df['x'].values,level,df['y'].values,alpha=0.2)
@@ -1995,12 +1877,12 @@ class Plots:
                 break
         return ax
 
-    
+
     def plot_section(self,df,*args,**kwargs):
         '''Grafica de la seccion transversal de estaciones de nivel
         |  ----------Parametros
         |  df : dataFrame con el levantamiento topo-batimetrico, columns=['x','y']
-        |  level : Nivel del agua  
+        |  level : Nivel del agua
         |  riskLevels : Niveles de alerta
         |  *args : argumentos plt.plot()
         |  **kwargs : xSensor,offset,riskLevels,xLabel,yLabel,ax,groundColor,fontsize,figsize,
@@ -2058,7 +1940,7 @@ class Plots:
     def plot_sectionCurrent(self,*args,**kwargs):
         lastLevel = self.level30Days['Level'].dropna().iloc[-1]/100.0
         self.plot_section(self.lastBat(self.xSensor),figsize = (14,6),offset=self.offset/100.0,level=lastLevel,xSensor=self.xSensor,riskLevels=np.array(self.riskLevels)/100.0,*args,**kwargs)
-        
+
     def plot_nivel(self,nivel,*args,**kwargs):
         '''Grafica serie de tiempo con valores de profundidad
         |  ----------Parametros
@@ -2095,7 +1977,7 @@ class Plots:
             ax.fill_between(nivel.index,riskLevels[2],riskLevels[3],alpha=alpha,color='red')
             ax.fill_between(nivel.index,riskLevels[3],max(riskLevels)*1.05,alpha=alpha,color='indigo')
             ax.set_ylim(nivel.min()*0.7,max(riskLevels)*1.05)
-            
+
     def plot_current(self,*args,**kwargs):
         nivel = self.level30Days.iloc[-180:]['Level']
         fontsize=kwargs.get('fontsize',16)
@@ -2125,7 +2007,7 @@ class Plots:
             plt.setp(text, color = self.colores_siata[-2])
         #ax3.set_title(u'Sección transversal y último dato registrado')
         self.plot_sectionCurrent(ax=ax3)
-        
+
     def plot_nivel30days(self,*args,**kwargs):
         nivel = self.level30Days['Level']
         fontsize=kwargs.get('fontsize',16)
@@ -2149,8 +2031,8 @@ class Plots:
         for text in leg.get_texts():
             plt.setp(text, color = self.colores_siata[-2])
         self.plot_section(self.lastBat(self.xSensor),offset=self.offset/100.0,level=nivel.max()/100.0,xSensor=self.xSensor,riskLevels=np.array(self.riskLevels)/100.0,ax=ax3)
-    
-    
+
+
     def plot_levelRisk_df(self,df,**kwargs):
         df = df.loc[df.index[::-1]]
         ax = kwargs.get('ax',False)
@@ -2166,7 +2048,7 @@ class Plots:
         ax.set_yticklabels(df.index,fontsize=14,ha = 'left');
         ax.set_xticks(np.arange(-.5, df.columns.size, 1), minor=True,);
         ax.set_yticks(np.arange(-.5, df.index.size, 1), minor=True);
-        plt.draw()  
+        plt.draw()
         yax = ax.get_yaxis()
         xax = ax.get_xaxis()
         pad = max(T.label.get_window_extent().width*1.05 for T in yax.majorTicks)
@@ -2177,11 +2059,11 @@ class Plots:
         ax.xaxis.tick_top()
         ax.grid(which='minor', color='w', linestyle='-', linewidth=2)
 
-        
+
 
     def plot_Risk(self,*args):
         self.plot_levelRisk_df(self.risk_dataFrame(*args))
-        
+
     def plot_estado_riesgo(self):
         end = self.roundTime(pd.to_datetime(datetime.datetime.now()))
         start = end - datetime.timedelta(hours = 3)
@@ -2190,15 +2072,15 @@ class Plots:
         self.plot_Risk(start,end)
         plt.savefig(path,bbox_inches='tight')
         os.system(scp)
-        
-        
-        
+
+
+
         def plot_levelInfo(self,nivel,riesgos,fontsize=16,ncol=4,ruteSave=False,bbox_to_anchor=(1.0,-0.1),**kwargs):
             riesgos = self.riskLevels
             fontsize=16
             ncol=4
             kwargs = {}
-            ruteSave = False            
+            ruteSave = False
             fig = plt.figure(figsize=(15,12))
             fig.subplots_adjust(left=None, bottom=0.1, right=None, top=None,
                                   wspace=None, hspace=10)
@@ -2231,7 +2113,7 @@ class Plots:
             ax2.text(0.0,0.8,'RESUMEN',color = self.colores_siata[-1],fontsize=18,)
             plt.axis('off')
 
-    def map_coordinates(self,basemap,factor = 0.2,**kwargs): 
+    def map_coordinates(self,basemap,factor = 0.2,**kwargs):
         self.lonmax = basemap.boundarylonmax
         self.lonmin = basemap.boundarylonmin
         self.latmin = basemap.boundarylats[0]
@@ -2239,7 +2121,7 @@ class Plots:
         self.meridians = [self.lonmin+factor*(self.lonmax-self.lonmin),self.lonmin+(1-factor)*(self.lonmax-self.lonmin)]
         self.parallels = [self.latmin+factor*(self.latmax-self.latmin),self.latmin+(1-factor)*(self.latmax-self.latmin)]
 
-        
+
     def adjust_basin(self,rel=0.766,fac=0.0):
         self.map_coordinates(self.Plot_basin(extra_long=fac,extra_lat=fac)[0])
         y = self.latmax-self.latmin
@@ -2252,8 +2134,8 @@ class Plots:
             extra_long = (y/(2.0*rel))-(x/2.0)
         self.map_coordinates(self.Plot_basin(extra_long=extra_long+fac,extra_lat=extra_lat+fac)[0])
         return extra_lat+fac,extra_long+fac
-    
-    
+
+
     def set_environment(sekf):
         # SETTING PLOTS ENVIRONMENT
         plt.style.use('seaborn-dark')
@@ -2264,5 +2146,5 @@ class Plots:
         plt.rc('text',color= typColor)
         plt.rc('xtick',color=typColor)
         plt.rc('ytick',color=typColor)
-        
+
 print 'worked'
