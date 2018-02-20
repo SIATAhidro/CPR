@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+#  CRP.py
+#
+#  Copyright 2018 MCANO <mario.cano@siata.gov.co>
+
 def read_csv(path,datetime_index = False,*args,**kwargs):
     '''
     pandas.read_csv() customized
@@ -91,14 +98,14 @@ def round_time(time,each=5.0):
     return pd.to_datetime((time + datetime.timedelta(minutes = redondeo-time.minute)).strftime(self.str_date_format))
 
 def get_area(x,y):
-    '''Calcula las áreas y los caudales de cada
-    una de las verticales, con el método de mid-section
+    '''Calcula las areas y los caudales de cada
+    una de las verticales, con el metodo de mid-section
     Input:
     x = Distancia desde la banca izquierda, type = numpy array
     y = Produndidad
     Output:
-    area = Área de la subsección
-    Q = Caudal de la subsección
+    area = Area de la subseccion
+    Q = Caudal de la subseccion
     '''
     # cálculo de áreas
     d = np.absolute(np.diff(x))/2.

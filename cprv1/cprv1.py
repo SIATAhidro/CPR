@@ -15,7 +15,7 @@ import mysql.connector
 from sqlalchemy import create_engine
 import os
 import warnings
-import static st
+import static as st
 import bookplots as bp
 
 warnings.filterwarnings('ignore')
@@ -64,7 +64,7 @@ class SqlDb:
         return '%s,%s,%s,%s'%(now,self.user,function,status,message)
 
     def read_sql(self,sql,close_db=True,*keys,**kwargs):
-        '''        
+        '''
         Read SQL query or database table into a DataFrame.
         Parameters
         ----------
@@ -211,10 +211,6 @@ class SqlDb:
             else:
                 id    = pk[fecha]
                 self.update_data(field,value,id)
-
-
-
-
 
 class Nivel(SqlDb):
     '''Class Nivel
@@ -724,7 +720,7 @@ class Pluvio(SqlDb):
 
 class Aforos:
     def subsection(self,x,y,v):
-        '''Calcula las áreas y los caudales de cada
+        '''Calcula las areas y los caudales de cada
         una de las verticales, con el método de mid-section
         Input:
         x = Distancia desde la banca izquierda, type = numpy array
