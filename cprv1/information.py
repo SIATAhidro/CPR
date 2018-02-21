@@ -41,7 +41,7 @@ INFORMACION = {
 	u'polygon_path'				: [u'Ruta del polígono de la cuenca',None],
 	u'kml_path'					: [u'Ruta del kml',None],
 	u'source'					: [u'Tabla remota',None],
-	u'class'					: [u'Clase que controla el objeto en cpr',None],
+	u'clase'					: [u'Clase que controla el objeto en cpr',None],
 	u'sirena'					: [u'Si tiene sirena',None],
 	u'offset'					: [u'Offset dinámico',None],
 	u'offsetOld'				: [u'Offset viejo', 'offsetN',],
