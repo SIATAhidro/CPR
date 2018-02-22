@@ -17,6 +17,7 @@ import os
 import warnings
 import static as st
 import bookplots as bp
+import information as info
 
 warnings.filterwarnings('ignore')
 

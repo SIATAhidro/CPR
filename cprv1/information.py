@@ -4,7 +4,6 @@
 #  CRP.py
 #
 #  Copyright 2018 MCANO <mario.cano@siata.gov.co>
-import pandas as pd
 INFORMACION = {
 	u'codigo'					: [u'Código','Codigo'],
 	u'nombre'					: [u'Nombre','NombreEstacion',],
