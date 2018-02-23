@@ -147,7 +147,7 @@ class SqlDb:
         -------
         read_bound_date('min')
         '''
-        format = (how,date_field,self.table,name,codigo)
+        format = (how,date_field_name,self.table,name,codigo)
         return self.read_sql("select %s(%s) from %s where codigo='%s'"%format).loc[0,'%s(fecha)'%how]
 
     def df_to_sql(self,df,chunksize=20000,*keys,**kwargs):
