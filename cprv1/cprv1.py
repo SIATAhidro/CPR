@@ -263,7 +263,7 @@ class SqlDb:
         df = df.sort_index()
         # removes nan
         df = df.loc[df.index.dropna()]
-        # mask duplicated index
+        # masks duplicated index
         df[df.index.duplicated(keep=False)]=np.NaN
         df = df.dropna()
         # drops coluns fecha and hora
@@ -386,8 +386,7 @@ class Nivel(SqlDb,wmf.SimuBasin):
         df.columns = ['record','mean_rain']
         return df
 
-    @staticmethod
-    def bin_to_df(path,start=None,end=None,**kwargs):
+    def bin_to_df(self,path,start=None,end=None,**kwargs):
         '''
         Reads rain fields (.bin) and converts it into pandas DataFrame
         Parameters
