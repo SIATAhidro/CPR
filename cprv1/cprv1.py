@@ -289,7 +289,7 @@ class Nivel(SqlDb,wmf.SimuBasin):
         remote_server :
         local_server  : database kwargs to pass into the Sqldb class
         '''
-        cpr.SqlDb.__init__(self,codigo=codigo,**kwargs)
+        SqlDb.__init__(self,codigo=codigo,**kwargs)
         simubasin = kwargs.get('path_nc')
         if simubasin:
             print 'setting wmf.SimuBasin'
