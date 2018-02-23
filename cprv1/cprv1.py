@@ -18,7 +18,7 @@ import warnings
 import static as st
 import bookplots as bp
 import information as info
-
+from wmf import wmf
 warnings.filterwarnings('ignore')
 
 class SqlDb:
@@ -274,7 +274,7 @@ class SqlDb:
         return series
 
 
-class Nivel(cpr.SqlDb,wmf.SimuBasin):
+class Nivel(SqlDb,wmf.SimuBasin):
     '''
     Provide functions to manipulate data related
     to a level sensor and its basin.
