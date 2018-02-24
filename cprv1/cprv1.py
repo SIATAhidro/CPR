@@ -119,7 +119,7 @@ class SqlDb:
         values = str(values).strip('[]')
         fields = str(fields).strip('[]').replace("'","")
         execution = 'INSERT INTO %s (%s) VALUES (%s)'%(self.table,fields,values)
-        self.execute_sql(query,*keys,**kwargs)
+        self.execute_sql(execution,*keys,**kwargs)
 
     def update_data(self,field,value,pk,*keys,**kwargs):
         '''
