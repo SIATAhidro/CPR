@@ -58,7 +58,7 @@ ESTACIONES = {
 	u'n2'						: [u'Nivel de riesgo 2','minor_flooding'],
 	u'n3'						: [u'Nivel de riesgo 3','moderate_flooding'],
 	u'n4'						: [u'Nivel de riesgo 4','major_flooding'],
-	u'l_tot_cauces'				: [u'Longitud total de los cauces',None]
+	u'l_tot_cauces'				: [u'Longitud total de los cauces',None],
 	u'timestamp'				: [u'Fecha de creación de la base de datos',None],
 	u'updated'					: [u'Fecha de la última modificación',None],
 	}
@@ -117,3 +117,18 @@ REDES = [
         'mocoa-pluvio', 'mocoa-methiess','sirena', 'meteorologica',
         'humedad','meteorologica_thiess', 'pluviografica'
         ]
+GEOPARAMETERS = {
+				'Area[km2]'               : u'area',
+				'Centro_[X]'              : u'centro_x',
+				'Centro_[Y]'              : u'centro_y',
+				'H Cauce_Max [m]'         : u'h_cauce_max',
+				'Hmax_[m]'                : u'hmax',
+				'Hmean_[m]'               : u'hmean',
+				'Hmin_[m]'                : u'hmin',
+				'Long_Cau [km]'           : u'l_cauce',
+				'Long_Cuenca [km]'        : u'l_cuenca',
+				'Long_tot_cauces[km]'     : u'l_tot_cauces',
+				'Pend_Cauce [%]'          : u'pend_cauce',
+				'Pend_Cuenca [%]'         : u'pend_cuenca',
+				'Perimetro[km]'           : u'perimetro'
+				}
