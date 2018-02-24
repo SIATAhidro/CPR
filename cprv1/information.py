@@ -4,7 +4,7 @@
 #  CRP.py
 #
 #  Copyright 2018 MCANO <mario.cano@siata.gov.co>
-INFORMACION = {
+ESTACIONES = {
 	u'codigo'					: [u'Código','Codigo'],
 	u'nombre'					: [u'Nombre','NombreEstacion',],
 	u'estado'					: [u'Estado','estado'],
