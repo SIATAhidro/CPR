@@ -104,7 +104,7 @@ LOCAL = {
                 }
 # argumentos por defecto para class SqlDb servidor de siata
 REMOTE = {
-	'host'  					:"192.168.1.74",
+	'host'  					:"localhost",
 	'user'  					:"sample_user",
 	'passwd'					:'s@mple_p@ss',
 	'table' 					: None,
