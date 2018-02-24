@@ -181,8 +181,6 @@ class SqlDb:
         '''
         format = (how,date_field_name,self.table,self.codigo)
         return self.read_sql("select %s(%s) from %s where codigo='%s'"%format).loc[0,'%s(%s)'%(how,date_field_name)]
-
-        Returns
     # functions for id_hydro
     @property
     def info(self):
@@ -279,7 +277,7 @@ class Nivel(SqlDb,wmf.SimuBasin):
     Provide functions to manipulate data related
     to a level sensor and its basin.
     '''
-    def __init__(self,codigo = None,remote_server = info.REMOTE,**kwargs):
+    def __init__(self,user,passwd,codigo = None,remote_server = info.REMOTE,path_nc=None,**kwargs):
         '''
         The instance inherits modules to manipulate SQL
         data and uses (hidrology modeling framework) wmf
@@ -288,12 +286,14 @@ class Nivel(SqlDb,wmf.SimuBasin):
         codigo        : primary key
         remote_server :
         local_server  : database kwargs to pass into the Sqldb class
+        path_nc       : path of the .nc file to set wmf class
         '''
-        SqlDb.__init__(self,codigo=codigo,**kwargs)
-        simubasin = kwargs.get('path_nc')
-        if simubasin:
+        if not kwargs:
+            kwargs = info.LOCAL
+        SqlDb.__init__(self,codigo=codigo,user=user,passwd=passwd,**kwargs)
+        if path_nc:
             print 'setting wmf.SimuBasin'
-            wmf.SimuBasin.__init__(self,rute=simubasin)
+            wmf.SimuBasin.__init__(self,rute=path_nc)
 
     @property
     def infost(self):
