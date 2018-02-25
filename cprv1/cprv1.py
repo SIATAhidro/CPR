@@ -295,6 +295,8 @@ class Nivel(SqlDb,wmf.SimuBasin):
             print 'setting wmf.SimuBasin'
             wmf.SimuBasin.__init__(self,rute=path_nc)
 
+        self.remote_server = remote_server
+
     @property
     def infost(self):
         '''
@@ -433,3 +435,13 @@ class Nivel(SqlDb,wmf.SimuBasin):
 
     def pluvios_in_basin(start,end):
         pass
+
+    def offset_remote(self):
+        remote = SqlDb(**self.remote_server)
+        query = "SELECT codigo,fecha_hora,offset FROM historico_bancallena_offset"
+        df = remote.read_sql(query).set_index('codigo')
+        try:
+            offset = float(df.loc[self.codigo,'offset'])
+        except TypeError:
+            offset =  df.loc[self.codigo,['fecha_hora','offset']].set_index('fecha_hora').sort_index()['offset'][-1]
+        return offset
