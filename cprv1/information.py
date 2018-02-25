@@ -5,7 +5,6 @@
 #
 #  Copyright 2018 MCANO <mario.cano@siata.gov.co>
 ESTACIONES = {
-	u'user'						: [u'Usuario',None],
 	u'codigo'					: [u'Código','Codigo'],
 	u'nombre'					: [u'Nombre','NombreEstacion',],
 	u'direccion'				: [u'Dirección','DireccionCalleCarrera',],
@@ -61,6 +60,7 @@ ESTACIONES = {
 	u'l_tot_cauces'				: [u'Longitud total de los cauces',None],
 	u'timestamp'				: [u'Fecha de creación de la base de datos',None],
 	u'updated'					: [u'Fecha de la última modificación',None],
+	u'usr'					: [u'Usuario que modifica',None]
 	}
 
 HIDRAULICA = {
@@ -132,3 +132,13 @@ GEOPARAMETERS = {
 				'Pend_Cuenca [%]'         : u'pend_cuenca',
 				'Perimetro[km]'           : u'perimetro'
 				}
+
+codigos = [ 128,108,245,109,106,186,124,135,247,140,96,101,246,92,94,245,238,251,1014,
+            1013,260,158,182,93,239,90,104,143,183,240,99,91,115,116,134,152,166,179,
+            155,236,173,178,196,195,259,268,98,272,273 ]
+
+x_sensor = [ 8.0,4.23,11.66,3.5,17.0,5.75,12.6,3.08,3.0,24.0,4.2,0.8,4.2,1.3,12.11,11.66,
+            12.54,4.1,6.88,8.74,21.0,3.87,2.45,31.17,6.4,11.6,2.55,4.66,2.8,1.5,21.0,18.95,
+            1.55,8.21,2.5,3.0,2.0,8.0,5.5,14.0,2.0,1.5,29.8,3.92,2.42,4.4,5.0,5.74,3.18 ]
+
+X_SENSOR = dict(zip(codigos,x_sensor))
