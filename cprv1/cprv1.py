@@ -189,7 +189,7 @@ class SqlDb:
         ---------
         pd.Series
         '''
-        query = "SELECT * FROM %s WHERE codigo='%s'"%(self.table,self.codigo)
+        query = "SELECT * FROM %s"%self.table
         return self.read_sql(query).T[0]
 
     def update_series(self,series,field):
@@ -298,6 +298,13 @@ class Nivel(SqlDb,wmf.SimuBasin):
             query = "SELECT nc_path FROM %s WHERE codigo = '%s'"%(self.local_table,self.codigo)
             nc_path = self.read_sql(query)['nc_path'][0]
             wmf.SimuBasin.__init__(self,rute=nc_path)
+        self.data_path ='/media/nicolas/maso/Mario/'
+
+    @property
+    def info(self):
+        query = "SELECT * FROM %s WHERE clase = 'Nivel' and codigo='%s'"%(self.local_table,self.codigo)
+        s = self.read_sql(query).T
+        return s[s.columns[0]]
 
     @property
     def infost(self):
@@ -307,8 +314,8 @@ class Nivel(SqlDb,wmf.SimuBasin):
         ---------
         pd.DataFrame
         '''
-        query = "SELECT * FROM %s"%(self.table)
-        return self.read_sql(query).set_index('Codigo')
+        query = "SELECT * FROM %s WHERE clase ='Nivel'"%(self.local_table)
+        return self.read_sql(query).set_index('codigo')
 
     @staticmethod
     def get_radar_rain(start,end,path_nc,path_radar,path_save,
