@@ -288,7 +288,7 @@ class Nivel(SqlDb,wmf.SimuBasin):
         codigo        : primary key
         remote_server :
         local_server  : database kwargs to pass into the Sqldb class
-        path_nc       : path of the .nc file to set wmf class
+        nc_path       : path of the .nc file to set wmf class
         '''
         self.remote_server = remote_server
         if not kwargs:
@@ -318,19 +318,19 @@ class Nivel(SqlDb,wmf.SimuBasin):
         return self.read_sql(query).set_index('codigo')
 
     @staticmethod
-    def get_radar_rain(start,end,path_nc,path_radar,path_save,
+    def get_radar_rain(start,end,nc_path,radar_path,save,
                     converter = 'RadarConvStra2Basin2.py',
                     utc=False,
-                    dt = 300):
+                    dt = 300,*keys,**kwargs):
         '''
         Convert radar rain to basin
         Parameters
         ----------
         start         : inicial date
         end           : final date
-        path_nc_basin : path to nc basin file
-        path_radar    : path to radar data
-        path_save     : path to save
+        nc_path       : path to nc basin file
+        radar_path    : path to radar data
+        save          : path to save
         converter     : path of main rain converter script,
                         default RadarConvStra2Basin2.py
         utc           : if radar data is in utc
@@ -350,9 +350,9 @@ class Nivel(SqlDb,wmf.SimuBasin):
                 converter,
                 start.strftime('%Y-%m-%d'),
                 end.strftime('%Y-%m-%d'),
-                path_nc,
-                path_radar,
-                path_save,
+                nc_path,
+                radar_path,
+                save,
                 dt,
                 hora_inicial,
                 hora_final
@@ -426,6 +426,56 @@ class Nivel(SqlDb,wmf.SimuBasin):
             format = (count*100.0/len(records),count,len(records))
             print("progress: %.1f %% - %s out of %s"%format)
         return pd.DataFrame(np.matrix(rain_field),index=df.index)
+
+    def file_format(self,start,end):
+        '''
+        Returns the file format customized for siata for elements containing
+        starting and ending point
+        Parameters
+        ----------
+        start        : initial date
+        end          : final date
+        Returns
+        ----------
+        file format with datetimes like %Y%m%d%H%M
+        Example
+        ----------
+        '''
+        start,end = pd.to_datetime(start),pd.to_datetime(end)
+        format = '%Y%m%d%H%M'
+        return '%s-%s-%s-%s'%(start.strftime(format),end.strftime(format),self.codigo,self.user)
+
+    def file_format_date_to_datetime(self,string):
+        '''
+        Transforms string in file_format like string to datetime object
+        Parameters
+        ----------
+        string         : string object in file_format like time object
+        Returns
+        ----------
+        datetime object
+        Example
+        ----------
+        In : self.file_format_date_to_datetime('201707141212')
+        Out: Timestamp('2017-07-14 12:12:00')
+        '''
+        format = (string[:4],string[4:6],string[6:8],string[8:10],string[10:12])
+        return pd.to_datetime("%s-%s-%s %s:%s"%format)
+
+    def file_format_to_variables(self,string):
+        '''
+        Splits file name string in user and datetime objects
+        Parameters
+        ----------
+        string         : file name
+        Returns
+        ----------
+        (user,start,end) - (string,datetime object,datetime object)
+        '''
+        string = string[:string.find('.')]
+        start,end,codigo,user = list(x.strip() for x in string.split('-'))
+        start,end = self.file_format_date_to_datetime(start),self.file_format_date_to_datetime(end)
+        return start,end,codigo,user
 
     def mean_rain_vect(self,path):
         pass
