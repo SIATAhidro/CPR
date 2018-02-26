@@ -266,7 +266,7 @@ class SqlDb:
         df = df.dropna()
         # drops coluns fecha and hora
         df = df.drop(['fecha','hora'],axis=1)
-        # reindex to have all indexes in time series
+        # reindex to have all indexes in full time series
         new_index = pd.date_range(start,end,freq='min')
         series = df.reindex(new_index)[field]
         return series
