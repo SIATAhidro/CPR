@@ -99,7 +99,6 @@ HIDRAULICA = {
 # argumentos por defecto para class SqlDb servidor local
 LOCAL = {
 	'host'  					:"localhost",
-	'table' 					: None,
 	'dbname'					:"cpr",
 	'port'  					: 3306
                 }
@@ -108,7 +107,7 @@ REMOTE = {
 	'host'  					:"localhost",
 	'user'  					:"sample_user",
 	'passwd'					:'s@mple_p@ss',
-	'table' 					: None,
+	'table' 					: 'siata',
 	'dbname'					:"cpr",
 	'port'  					: 3306
 			}
