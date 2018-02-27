@@ -291,14 +291,17 @@ class Nivel(SqlDb,wmf.SimuBasin):
         nc_path       : path of the .nc file to set wmf class
         '''
         self.remote_server = remote_server
+        self.data_path ='/media/nicolas/maso/Mario/'
         if not kwargs:
             kwargs = info.LOCAL
         SqlDb.__init__(self,codigo=codigo,user=user,passwd=passwd,**kwargs)
         if SimuBasin:
             query = "SELECT nc_path FROM %s WHERE codigo = '%s'"%(self.local_table,self.codigo)
-            nc_path = self.read_sql(query)['nc_path'][0]
+            try:
+                nc_path = self.read_sql(query)['nc_path'][0]
+            except:
+                nc_path = self.data_path + 'basins/%s.nc'%self.codigo
             wmf.SimuBasin.__init__(self,rute=nc_path)
-        self.data_path ='/media/nicolas/maso/Mario/'
 
     @property
     def info(self):
