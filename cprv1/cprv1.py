@@ -568,18 +568,6 @@ class Nivel(SqlDb,wmf.SimuBasin):
         else:
             return self.info.offset_old - s
 
-    def sensor(start,end,remote=False):
-        pass
-
-    def surface_velocity(start,end,remote=False):
-        pass
-
-    def camera(start,end):
-        pass
-
-    def pluvios_in_basin(start,end):
-        pass
-
     def offset_remote(self):
         remote = SqlDb(**self.remote_server)
         query = "SELECT codigo,fecha_hora,offset FROM historico_bancallena_offset"
@@ -589,3 +577,116 @@ class Nivel(SqlDb,wmf.SimuBasin):
         except TypeError:
             offset =  df.loc[self.codigo,['fecha_hora','offset']].set_index('fecha_hora').sort_index()['offset'][-1]
         return offset
+
+
+    def mysql_query(self,query,toPandas=True):
+        conn_db = MySQLdb.connect(self.host, self.user, self.passwd, self.dbname)
+        db_cursor = conn_db.cursor ()
+        db_cursor.execute (query)
+        if toPandas == True:
+            data = pd.DataFrame(np.matrix(db_cursor.fetchall()))
+        else:
+            data = db_cursor.fetchall()
+        conn_db.close()
+        return data
+
+    def last_bat(self):
+        dfl = self.mysql_query('select * from levantamiento_aforo_nueva')
+        dfl.columns = self.mysql_query('describe levantamiento_aforo_nueva')[0].values
+        dfl = dfl.set_index('id_aforo')
+        for id_aforo in list(set(dfl.index)):
+            id_estacion_asociada,fecha = self.mysql_query("SELECT id_estacion_asociada,fecha from aforo_nueva where id_aforo = %s"%id_aforo,toPandas=False)[0]
+            dfl.loc[id_aforo,'id_estacion_asociada'] = int(id_estacion_asociada)
+            dfl.loc[id_aforo,'fecha'] = fecha
+        dfl = dfl.reset_index().set_index('id_estacion_asociada')
+        lev = dfl[dfl['fecha']==max(list(set(pd.to_datetime(dfl.loc[self.codigo,'fecha'].values))))][['x','y']].astype('float')
+        cond = (lev['x']<self.info.x_sensor).values
+        flag = cond[0]
+        for i,j in enumerate(cond):
+            if j==flag:
+                pass
+            else:
+                point = (tuple(lev.iloc[i-1].values),tuple(lev.iloc[i].values))
+            flag = j
+        intersection = self.line_intersection(point,((self.info.x_sensor,0.1*lev['y'].min()),(self.info.x_sensor,1.1*lev['y'].max(),(self.info.x_sensor,))))
+        lev = lev.append(pd.DataFrame(np.matrix(intersection),index=['x_sensor'],columns=['x','y'])).sort_values('x')
+        lev['y'] = lev['y']-intersection[1]
+        lev.index = range(1,lev.index.size+1)
+        return lev
+
+    def get_sections(self,levantamiento,level):
+            hline = ((levantamiento['x'].min()*1.1,level),(levantamiento['x'].max()*1.1,level)) # horizontal line
+            lev = pd.DataFrame.copy(levantamiento) #df to modify
+            #PROBLEMAS EN LOS BORDES
+            borderWarning = 'Warning:\nProblemas de borde en el levantamiento'
+            if lev.iloc[0]['y']<level:
+                print '%s en banca izquierda'%borderWarning
+                lev = pd.DataFrame(np.matrix([lev.iloc[0]['x'],level]),columns=['x','y']).append(lev)
+            if lev.iloc[-1]['y']<level:
+                print '%s en banca derecha'%borderWarning
+                lev = lev.append(pd.DataFrame(np.matrix([lev.iloc[-1]['x'],level]),columns=['x','y']))
+            condition = (lev['y']>=level).values
+            flag = condition[0]
+            nlev = []
+            intCount = 0
+            ids=[]
+            for i,j in enumerate(condition):
+                if j==flag:
+                    ids.append(i)
+                    nlev.append(list(lev.iloc[i].values))
+                else:
+                    intCount+=1
+                    ids.append('Point %s'%intCount)
+                    line = (list(lev.iloc[i-1].values),list(lev.iloc[i].values)) #  #puntoA
+                    inter = self.line_intersection(line,hline)
+                    nlev.append(inter)
+                    ids.append(i)
+                    nlev.append(list(lev.iloc[i].values))
+                flag = j
+            df = pd.DataFrame(np.matrix(nlev),columns=['x','y'],index=ids)
+            dfs = []
+            for i in np.arange(1,100,2)[:intCount/2]:
+                dfs.append(df.loc['Point %s'%i:'Point %s'%(i+1)])
+            return dfs
+
+    @staticmethod
+    def get_area(x,y):
+        '''Calcula las áreas y los caudales de cada
+        una de las verticales, con el método de mid-section
+        Input:
+        x = Distancia desde la banca izquierda, type = numpy array
+        y = Produndidad
+        Output:
+        area = Área de la subsección
+        Q = Caudal de la subsección
+        '''
+        # cálculo de áreas
+        d = np.absolute(np.diff(x))/2.
+        b = x[:-1]+ d
+        area = np.diff(b)*y[1:-1]
+        area = np.insert(area, 0, d[0]*y[0])
+        area = np.append(area,d[-1]*y[-1])
+        area = np.absolute(area)
+        # cálculo de caudal
+        return area
+
+    def get_areas(self,dfs):
+        area = 0
+        for df in dfs:
+            area+=sum(self.get_area(df['x'].values,df['y'].values))
+        return area
+
+    @staticmethod
+    def line_intersection(line1, line2):
+        xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
+        ydiff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])
+        def det(a, b):
+            return a[0] * b[1] - a[1] * b[0]
+
+        div = det(xdiff, ydiff)
+        if div == 0:
+           raise Exception('lines do not intersect')
+        d = (det(*line1), det(*line2))
+        x = det(d, xdiff) / div
+        y = det(d, ydiff) / div
+        return (x, y)
