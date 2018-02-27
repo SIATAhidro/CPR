@@ -500,10 +500,55 @@ class Nivel(SqlDb,wmf.SimuBasin):
                 break
             else:
                 file =  None
-            return file
+        return file
 
-    def mean_rain_vect(self,path):
-        pass
+    def radar_rain(self,start,end,ext='.hdr'):
+        '''
+        Reads rain fields (.bin or .hdr)
+        Parameters
+        ----------
+        start        : initial date
+        end          : final date
+        Returns
+        ----------
+        pandas DataFrame or Series with mean radar rain
+        '''
+        start,end = pd.to_datetime(start),pd.to_datetime(end)
+        file = self.check_rain_files(start,end)
+        if file:
+            file = self.rain_path+file
+            if ext == '.hdr':
+                obj =  self.hdr_to_series(file+'.hdr')
+            else:
+                print file
+                obj =  self.bin_to_df(file)
+            obj = obj.loc[start:end]
+        else:
+            print 'converting rain data, it may take a while'
+            converter = os.path.dirname(os.getcwd())+'/cprv1/RadarConvStra2Basin2.py'
+            save =  '%s%s'%(self.rain_path,self.file_format(start,end))
+            self.get_radar_rain(start,end,self.info.nc_path,self.radar_path,save,converter=converter,utc=True)
+            print file
+            file = self.check_rain_files(start,end)
+            if ext == '.hdr':
+                obj =  self.hdr_to_series(file+'.hdr')
+            else:
+                obj =  self.bin_to_df(file)
+            obj = obj.loc[start:end]
+        return obj
+
+    def radar_rain_vect(self,start,end):
+        '''
+        Reads rain fields (.bin or .hdr)
+        Parameters
+        ----------
+        start        : initial date
+        end          : final date
+        Returns
+        ----------
+        pandas DataFrame with datetime index and basin radar fields
+        '''
+        return self.radar_rain(start,end,ext='.bin')
 
     def mean_rain(self,start,end):
         pass
