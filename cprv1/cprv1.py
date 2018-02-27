@@ -478,7 +478,7 @@ class Nivel(SqlDb,wmf.SimuBasin):
         string = string[:string.find('.')]
         start,end,codigo,user = list(x.strip() for x in string.split('-'))
         start,end = self.file_format_date_to_datetime(start),self.file_format_date_to_datetime(end)
-        return start,end,codigo,user
+        return start,end,int(codigo),user
 
     def mean_rain_vect(self,path):
         pass
