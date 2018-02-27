@@ -292,6 +292,8 @@ class Nivel(SqlDb,wmf.SimuBasin):
         '''
         self.remote_server = remote_server
         self.data_path ='/media/nicolas/maso/Mario/'
+        self.rain_path = self.data_path + 'user_output/radar/'
+        self.radar_path = self.data_path + 'radar'
         if not kwargs:
             kwargs = info.LOCAL
         SqlDb.__init__(self,codigo=codigo,user=user,passwd=passwd,**kwargs)
@@ -345,8 +347,8 @@ class Nivel(SqlDb,wmf.SimuBasin):
         start = pd.to_datetime(start); end = pd.to_datetime(end)
         if utc ==True:
             delay = datetime.timedelta(hours=5)
-            start = start-delay
-            end = end - delay
+            start = start+delay
+            end = end + delay
         hora_inicial = start.strftime('%H:%M')
         hora_final = end.strftime('%H:%M')
         format = (
@@ -479,6 +481,26 @@ class Nivel(SqlDb,wmf.SimuBasin):
         start,end,codigo,user = list(x.strip() for x in string.split('-'))
         start,end = self.file_format_date_to_datetime(start),self.file_format_date_to_datetime(end)
         return start,end,int(codigo),user
+
+    def check_rain_files(self,start,end):
+        '''
+        Finds out if rain data has already been processed
+        start        : initial date
+        end          : final date
+        Returns
+        ----------
+        file path or None for no coincidences
+        '''
+        start,end = pd.to_datetime(start),pd.to_datetime(end)
+        files = os.listdir(self.rain_path)
+        for file in files:
+            comienza,finaliza,codigo,usuario = self.file_format_to_variables(file)
+            if (comienza<=start) and (finaliza>=end) and (codigo==self.codigo):
+                file =  file[:file.find('.')]
+                break
+            else:
+                file =  None
+            return file
 
     def mean_rain_vect(self,path):
         pass
