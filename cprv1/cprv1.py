@@ -751,3 +751,37 @@ class Nivel(SqlDb,wmf.SimuBasin):
         levels_nuevos = np.linspace(np.min(lev),np.max(lev),255)
         norm_new_radar = colors.BoundaryNorm(boundaries=levels_nuevos, ncolors=256)
         return cmap_radar,levels_nuevos,norm_new_radar
+
+    def level_local(self,start,end,offset='new'):
+        if offset=='new':
+            offset = self.info.offset
+        else:
+            offset = self.info.offset_old
+        format = (self.codigo,start,end)
+        query = "select fecha,nivel from hydro where codigo='%s' and fecha between '%s' and '%s';"%format
+        return (offset - self.read_sql(query).set_index('fecha')['nivel'])
+
+    def convert_level_to_risk(self,value,risk_levels):
+        ''' Convierte lamina de agua o profundidad a nivel de riesgo
+        Parameters
+        ----------
+        value : float. Valor de profundidad o lamina de agua
+        riskLevels: list,tuple. Niveles de riesgo
+
+        Returns
+        -------
+        riskLevel : float. Nivel de riesgo
+        '''
+        if math.isnan(value):
+            return np.NaN
+        else:
+            dif = value - np.array([0]+list(risk_levels))
+            return int(np.argmin(dif[dif >= 0]))
+
+    @property
+    def risk_levels(self):
+        query = "select n1,n2,n3,n4 from estaciones_estaciones where codigo = '%s'"%self.codigo
+        return tuple(self.read_sql(query).values[0])
+
+    def risk_level_series(self,start,end):
+        return self.level_local(start,end).apply(lambda x: self.convert_level_to_risk(x,self.risk_levels))
