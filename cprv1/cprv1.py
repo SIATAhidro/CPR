@@ -493,15 +493,18 @@ class Nivel(SqlDb,wmf.SimuBasin):
         '''
         start,end = pd.to_datetime(start),pd.to_datetime(end)
         files = os.listdir(self.rain_path)
-        for file in files:
-            comienza,finaliza,codigo,usuario = self.file_format_to_variables(file)
-            if (comienza<=start) and (finaliza>=end) and (codigo==self.codigo):
-                file =  file[:file.find('.')]
-                break
-            else:
-                file =  None
+        if files:
+            for file in files:
+                comienza,finaliza,codigo,usuario = self.file_format_to_variables(file)
+                if (comienza<=start) and (finaliza>=end) and (codigo==self.codigo):
+                    file =  file[:file.find('.')]
+                    break
+                else:
+                    file = None
+        else:
+            file = None
         return file
-
+	
     def radar_rain(self,start,end,ext='.hdr'):
         '''
         Reads rain fields (.bin or .hdr)
@@ -529,7 +532,7 @@ class Nivel(SqlDb,wmf.SimuBasin):
             save =  '%s%s'%(self.rain_path,self.file_format(start,end))
             self.get_radar_rain(start,end,self.info.nc_path,self.radar_path,save,converter=converter,utc=True)
             print file
-            file = self.check_rain_files(start,end)
+            file = self.rain_path + self.check_rain_files(start,end)
             if ext == '.hdr':
                 obj =  self.hdr_to_series(file+'.hdr')
             else:
