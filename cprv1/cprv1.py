@@ -19,6 +19,9 @@ import static as st
 import bookplots as bp
 import information as info
 from wmf import wmf
+from mpl_toolkits.basemap import Basemap
+import matplotlib.colors as colors
+
 warnings.filterwarnings('ignore')
 
 class SqlDb:
@@ -293,7 +296,7 @@ class Nivel(SqlDb,wmf.SimuBasin):
         self.remote_server = remote_server
         self.data_path ='/media/nicolas/maso/Mario/'
         self.rain_path = self.data_path + 'user_output/radar/'
-        self.radar_path = self.data_path + 'radar'
+        self.radar_path = '/media/nicolas/Home/nicolas/101_RadarClass/'
         if not kwargs:
             kwargs = info.LOCAL
         SqlDb.__init__(self,codigo=codigo,user=user,passwd=passwd,**kwargs)
@@ -364,7 +367,8 @@ class Nivel(SqlDb,wmf.SimuBasin):
                  )
         query = '%s %s %s %s %s %s -t %s -v -s -1 %s -2 %s'%format
         output = os.system(query)
-        if output != 0:
+        print query
+	if output != 0:
             print 'ERROR: something went wrong'
         return query
 
@@ -693,3 +697,57 @@ class Nivel(SqlDb,wmf.SimuBasin):
         x = det(d, xdiff) / div
         y = det(d, ydiff) / div
         return (x, y)
+
+    def longitude_latitude_basin(self):
+        mcols,mrows = wmf.cu.basin_2map_find(self.structure,self.ncells)
+        mapa,mxll,myll=wmf.cu.basin_2map(self.structure,self.structure[0],mcols,mrows,self.ncells)
+        longs = np.array([mxll+0.5*wmf.cu.dx+i*wmf.cu.dx for i in range(mcols)])
+        lats  = np.array([myll+0.5*wmf.cu.dx+i*wmf.cu.dx for i in range(mrows)])
+        return longs,lats
+
+    def basin_mappable(self,vec=None, extra_long=0,extra_lat=0,perimeter_keys={},contour_keys={},**kwargs):
+        longs,lats=self.longitude_latitude_basin()
+        x,y=np.meshgrid(longs,lats)
+        y=y[::-1]
+        # map settings
+        m = Basemap(projection='merc',llcrnrlat=lats.min()-extra_lat, urcrnrlat=lats.max()+extra_lat,
+            llcrnrlon=longs.min()-extra_long, urcrnrlon=longs.max()+extra_long, resolution='c',**kwargs)
+        # perimeter plot
+        xp,yp = m(self.Polygon[0], self.Polygon[1])
+        m.plot(xp, yp,**perimeter_keys)
+        # vector plot
+        if vec is not None:
+            map_vec,mxll,myll=wmf.cu.basin_2map(self.structure,vec,len(longs),len(lats),self.ncells)
+            map_vec[map_vec==wmf.cu.nodata]=np.nan
+            xm,ym=m(x,y)
+            contour = m.contourf(xm, ym, map_vec.T, 25,**contour_keys)
+        else:
+            contour = None
+        return m,contour
+
+    def adjust_basin(self,rel=0.766,fac=0.0):
+        longs,lats = self.longitude_latitude_basin()
+        x = longs[-1]-longs[0]
+        y = lats[-1] - lats[0]
+        if x>y:
+            extra_long = 0
+            extra_lat = (rel*x-y)/2.0
+        else:
+            extra_lat=0
+            extra_long = (y/(2.0*rel))-(x/2.0)
+        return extra_lat+fac,extra_long+fac
+
+
+    def radar_cmap(self):
+        bar_colors=[(255, 255, 255),(0, 255, 255), (0, 0, 255),(70, 220, 45),(44, 141, 29),\
+                       (255,255,75),(255,142,0),(255,0,0),(128,0,128),(102,0,102),(255, 153, 255)]
+        lev = np.array([0.,1.,5.,10.,20.,30.,45.,60., 80., 100., 150.])
+        scale_factor =  ((255-0.)/(lev.max() - lev.min()))
+        new_Limits = list(np.array(np.round((lev-lev.min())*\
+                                    scale_factor/255.,3),dtype = float))
+        Custom_Color = map(lambda x: tuple(ti/255. for ti in x) , bar_colors)
+        nueva_tupla = [((new_Limits[i]),Custom_Color[i],) for i in range(len(Custom_Color))]
+        cmap_radar =colors.LinearSegmentedColormap.from_list('RADAR',nueva_tupla)
+        levels_nuevos = np.linspace(np.min(lev),np.max(lev),255)
+        norm_new_radar = colors.BoundaryNorm(boundaries=levels_nuevos, ncolors=256)
+        return cmap_radar,levels_nuevos,norm_new_radar
