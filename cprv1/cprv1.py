@@ -600,7 +600,7 @@ class Nivel(SqlDb,wmf.SimuBasin):
         conn_db.close()
         return data
 
-    def last_bat(self):
+    def last_bat(self,x_sensor):
         dfl = self.mysql_query('select * from levantamiento_aforo_nueva')
         dfl.columns = self.mysql_query('describe levantamiento_aforo_nueva')[0].values
         dfl = dfl.set_index('id_aforo')
@@ -610,7 +610,7 @@ class Nivel(SqlDb,wmf.SimuBasin):
             dfl.loc[id_aforo,'fecha'] = fecha
         dfl = dfl.reset_index().set_index('id_estacion_asociada')
         lev = dfl[dfl['fecha']==max(list(set(pd.to_datetime(dfl.loc[self.codigo,'fecha'].values))))][['x','y']].astype('float')
-        cond = (lev['x']<self.info.x_sensor).values
+        cond = (lev['x']<x_sensor).values
         flag = cond[0]
         for i,j in enumerate(cond):
             if j==flag:
@@ -618,7 +618,7 @@ class Nivel(SqlDb,wmf.SimuBasin):
             else:
                 point = (tuple(lev.iloc[i-1].values),tuple(lev.iloc[i].values))
             flag = j
-        intersection = self.line_intersection(point,((self.info.x_sensor,0.1*lev['y'].min()),(self.info.x_sensor,1.1*lev['y'].max(),(self.info.x_sensor,))))
+        intersection = self.line_intersection(point,((x_sensor,0.1*lev['y'].min()),(x_sensor,1.1*lev['y'].max(),(x_sensor,))))
         lev = lev.append(pd.DataFrame(np.matrix(intersection),index=['x_sensor'],columns=['x','y'])).sort_values('x')
         lev['y'] = lev['y']-intersection[1]
         lev.index = range(1,lev.index.size+1)
@@ -828,3 +828,22 @@ class Nivel(SqlDb,wmf.SimuBasin):
         ax.fill_between(nivel.index,riesgos[3],ax.get_ylim()[1],alpha=alpha,color='indigo')
         ax.set_ylim(0,max(riesgos)*1.05)
         return (ax,axu)
+
+    def plot_basin_rain(self,vec,ax=None):
+        if ax is None:
+            fig = plt.figure(figsize=(10,16))
+            ax = fig.add_subplot()
+        cmap_radar,levels,norm = self.radar_cmap()
+        extra_lat,extra_long = self.adjust_basin(fac=0.02)
+        mapa,contour = self.basin_mappable(vec,
+                                      ax=ax,
+                                      extra_long=extra_long,
+                                      extra_lat = extra_lat,
+                                      contour_keys={'cmap'  :cmap_radar,
+                                                    'levels':levels,
+                                                    'norm'  :norm},
+                                     perimeter_keys={'color':'red'})
+
+        cbar = mapa.colorbar(contour,location='bottom',pad="5%")
+        mapa.readshapefile(self.info.net_path,'net_path')
+        mapa.readshapefile(self.info.net_path,'stream_path')
