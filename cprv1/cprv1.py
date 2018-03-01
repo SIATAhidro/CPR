@@ -785,3 +785,17 @@ class Nivel(SqlDb,wmf.SimuBasin):
 
     def risk_level_series(self,start,end):
         return self.level_local(start,end).apply(lambda x: self.convert_level_to_risk(x,self.risk_levels))
+    
+    def risk_level_df(self,start,end):
+        print 'Making risk dataframe'
+        df = pd.DataFrame(index=pd.date_range(start,end,freq='d'),columns=self.infost.index)
+        for count,codigo in enumerate(df.columns):
+            print "%s | '%.2f %%' - %s out of %s "%(codigo,(count+1)*100.0/df.columns.size,count+1,df.columns.size)
+            try:
+                clase = cpr.Nivel(user=self.user,codigo=codigo,passwd=self.passwd,**cpr.info.LOCAL)
+                df[codigo] = clase.risk_level_series(start,end).resample('D',how='max')
+            except:
+                df[codigo] = np.NaN
+                print "WARNING: station %s empty,row filled with NaN"%codigo
+        print 'risk dataframe finished'
+        return df
