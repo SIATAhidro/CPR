@@ -21,7 +21,7 @@ import information as info
 from wmf import wmf
 from mpl_toolkits.basemap import Basemap
 import matplotlib.colors as colors
-
+import matplotlib.pyplot as plt
 warnings.filterwarnings('ignore')
 
 class SqlDb:
@@ -307,6 +307,9 @@ class Nivel(SqlDb,wmf.SimuBasin):
             except:
                 nc_path = self.data_path + 'basins/%s.nc'%self.codigo
             wmf.SimuBasin.__init__(self,rute=nc_path)
+
+    	self.colores_siata = [[0.69,0.87,0.93],[0.61,0.82,0.88],[0.32,0.71,0.77],[0.21,0.60,0.65],\
+                          [0.0156,0.486,0.556],[0.007,0.32,0.36],[0.0078,0.227,0.26]]
 
     @property
     def info(self):
@@ -788,14 +791,40 @@ class Nivel(SqlDb,wmf.SimuBasin):
     
     def risk_level_df(self,start,end):
         print 'Making risk dataframe'
-        df = pd.DataFrame(index=pd.date_range(start,end,freq='d'),columns=self.infost.index)
+        df = pd.DataFrame(index=pd.date_range(start,end,freq='D'),columns=self.infost.index)
         for count,codigo in enumerate(df.columns):
             print "%s | '%.2f %%' - %s out of %s "%(codigo,(count+1)*100.0/df.columns.size,count+1,df.columns.size)
             try:
-                clase = cpr.Nivel(user=self.user,codigo=codigo,passwd=self.passwd,**cpr.info.LOCAL)
+                clase = Nivel(user=self.user,codigo=codigo,passwd=self.passwd,**info.LOCAL)
                 df[codigo] = clase.risk_level_series(start,end).resample('D',how='max')
             except:
                 df[codigo] = np.NaN
                 print "WARNING: station %s empty,row filled with NaN"%codigo
         print 'risk dataframe finished'
         return df
+
+    def plot_level(self,level,rain,riesgos,fontsize=14,ncol=4,ax=None,bbox_to_anchor=(1.0,1.2),**kwargs):
+        if ax is None:
+            fig = plt.figure(figsize=(13.,4))
+            ax = fig.add_subplot(111)
+        nivel = level.resample('H',how='mean')
+        nivel.plot(ax=ax,label='',color='k')
+        nivel.plot(alpha=0.3,label='',color='r',fontsize=fontsize,**kwargs)
+        axu= ax.twinx()
+        axu.set_ylabel('Lluvia promedio [mm/h]',fontsize=fontsize)
+        mean_rain = (rain*60/5.0).resample('H',how='sum')
+
+        mean_rain.plot(ax=axu,alpha=0.5,fontsize=fontsize,**kwargs)
+        axu.fill_between(mean_rain.index,0,mean_rain.values,alpha=0.2)
+        ylim = axu.get_ylim()[::-1]
+        ylim = (ylim[0],0.0)
+        axu.set_ylim(ylim)
+        ax.set_ylabel('Nivel (cm)',fontsize=fontsize)
+        alpha=0.2
+        ax.fill_between(nivel.index,ax.get_ylim()[0],riesgos[0],alpha=0.1,color=self.colores_siata[0])
+        ax.fill_between(nivel.index,riesgos[0],riesgos[1],alpha=alpha,color='green')
+        ax.fill_between(nivel.index,riesgos[1],riesgos[2],alpha=alpha,color='orange')
+        ax.fill_between(nivel.index,riesgos[2],riesgos[3],alpha=alpha,color='red')
+        ax.fill_between(nivel.index,riesgos[3],ax.get_ylim()[1],alpha=alpha,color='indigo')
+        ax.set_ylim(0,max(riesgos)*1.05)
+        return (ax,axu)
