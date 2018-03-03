@@ -104,13 +104,15 @@ LOCAL = {
                 }
 # argumentos por defecto para class SqlDb servidor de siata
 REMOTE = {
-	'host'  					:"localhost",
-	'user'  					:"sample_user",
-	'passwd'					:'s@mple_p@ss',
-	'table' 					: 'siata',
-	'dbname'					:"cpr",
+	'host'  					: "192.168.1.74",
+	'user'  					:"siata_Consulta",
+	'passwd'					:"si@t@64512_C0nsult4",
+	'table' 					: 'estaciones',
+	'dbname'					:"siata",
 	'port'  					: 3306
 			}
+
+
 REDES = [
         'nivel', 'mocoa-nivel', 'Pluviografica', 'velocidad_superficial_rio',
         'mocoa-pluvio', 'mocoa-methiess','sirena', 'meteorologica',
